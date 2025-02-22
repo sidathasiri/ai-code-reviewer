@@ -22,5 +22,3 @@ jobs:
       - name: AI Review
         id: ai-review
         uses: ./ # Use the action in the current repository
-        # with:
-        #   who-to-greet: "GitHub"

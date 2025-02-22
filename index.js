@@ -2,22 +2,49 @@ import * as core from "@actions/core";
 import * as github from "@actions/github";
 import { reviewCode } from "./ai-review-service.js";
 
-function run() {
+async function run() {
   try {
-    // Get input from the workflow file (if any)
-    const nameToGreet = core.getInput("who-to-greet");
-    console.log(`Hello, ${nameToGreet || "World"}!`);
+    // Access the GitHub context
+    const context = github.context;
 
-    // Set an output for the action
-    // core.setOutput("greeting", `Hello, ${nameToGreet || "World"}!`);
+    // Ensure the event is a pull request
+    if (context.eventName !== "pull_request") {
+      core.setFailed("This action only works for pull requests.");
+      return;
+    }
 
-    // Log the context (optional)
-    // console.log(JSON.stringify(github.context, null, 2));
+    // Get the PR details
+    const pr = context.payload.pull_request;
+    const baseSha = pr.base.sha; // Base commit (target branch)
+    const headSha = pr.head.sha; // Head commit (PR branch)
 
-    reviewCode();
+    // Get the list of changed files using Git
+    let changedFiles = "";
+    await exec.exec("git", ["diff", "--name-only", `${baseSha}..${headSha}`], {
+      listeners: {
+        stdout: (data) => {
+          changedFiles += data.toString();
+        },
+      },
+    });
+
+    const files = changedFiles.split("\n").filter(Boolean);
+    console.log("Changed Files:", files);
+
+    // Get the diff for each file
+    let diffOutput = "";
+    await exec.exec("git", ["diff", `${baseSha}..${headSha}`], {
+      listeners: {
+        stdout: (data) => {
+          diffOutput += data.toString();
+        },
+      },
+    });
+
+    console.log("Diff Output:", diffOutput);
   } catch (error) {
     core.setFailed(error.message);
   }
 }
 
-run();
+run().then();
