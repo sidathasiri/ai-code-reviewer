@@ -28,7 +28,7 @@ export const reviewCode = async (diff) => {
     retrieveAndGenerateConfiguration: {
       type: "KNOWLEDGE_BASE",
       knowledgeBaseConfiguration: {
-        knowledgeBaseId: "UZFY9J150F",
+        knowledgeBaseId: "YXLPYEUEFA",
         modelArn:
           "arn:aws:bedrock:us-east-1::foundation-model/amazon.nova-pro-v1:0",
       },
