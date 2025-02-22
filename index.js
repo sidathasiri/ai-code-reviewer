@@ -30,7 +30,7 @@ async function run() {
     });
 
     const files = changedFiles.split("\n").filter(Boolean);
-    console.log("Changed Files:", files);
+    // console.log("Changed Files:", files);
 
     // Get the diff for each file
     let diffOutput = "";
@@ -42,7 +42,8 @@ async function run() {
       },
     });
 
-    console.log("Diff Output:", diffOutput);
+    // console.log("Diff Output:", diffOutput);
+    await reviewCode(diffOutput);
   } catch (error) {
     core.setFailed(error.message);
   }
