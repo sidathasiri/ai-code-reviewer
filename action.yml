@@ -1,17 +1,17 @@
-name: 'Hello World Action'
-description: 'A simple GitHub Action that says Hello World'
-author: 'Your Name'
+name: "Hello World Action"
+description: "A simple GitHub Action that says Hello World"
+author: "Your Name"
 
 inputs:
   who-to-greet:
-    description: 'Who to greet'
+    description: "Who to greet"
     required: false
-    default: 'World'
+    default: "World"
 
 outputs:
   greeting:
-    description: 'The greeting message'
+    description: "The greeting message"
 
 runs:
-  using: 'node20'
-  main: 'index.js'
+  using: "node20"
+  main: "dist/index.js"
