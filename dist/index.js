@@ -56216,10 +56216,6 @@ var __webpack_exports__ = {};
 
 // EXTERNAL MODULE: ./node_modules/@actions/core/lib/core.js
 var core = __nccwpck_require__(7484);
-// EXTERNAL MODULE: ./node_modules/@actions/github/lib/github.js
-var github = __nccwpck_require__(3228);
-// EXTERNAL MODULE: ./node_modules/@actions/exec/lib/exec.js
-var exec = __nccwpck_require__(5236);
 // EXTERNAL MODULE: ./node_modules/@aws-sdk/client-bedrock-agent-runtime/dist-cjs/index.js
 var dist_cjs = __nccwpck_require__(7754);
 ;// CONCATENATED MODULE: ./ai-review-service.js
@@ -56227,10 +56223,7 @@ var dist_cjs = __nccwpck_require__(7754);
 
 const client = new dist_cjs.BedrockAgentRuntimeClient({ region: "us-east-1" });
 
-// const code = `const data = await fetchData()`;
-
 const reviewCode = async (diff) => {
-  console.log("🚀 ~ diff:", diff);
   const retrieveAndGen = await new dist_cjs.RetrieveAndGenerateCommand({
     input: {
       text: `As a JavaScript/TypeScript GitHub Pull Request code review expert, please analyze this code for:
@@ -56258,10 +56251,69 @@ const reviewCode = async (diff) => {
   });
 
   const { citations, output } = await client.send(retrieveAndGen);
-  // console.log("🚀 ~ citations:", JSON.stringify(citations, null, 2));
-  // console.log("🚀 ~ output:", JSON.stringify(output, null, 2));
-  console.log(output);
-  // return output;
+  return output;
+};
+
+// EXTERNAL MODULE: ./node_modules/@actions/github/lib/github.js
+var github = __nccwpck_require__(3228);
+// EXTERNAL MODULE: ./node_modules/@actions/exec/lib/exec.js
+var exec = __nccwpck_require__(5236);
+;// CONCATENATED MODULE: ./github-service.js
+
+
+
+
+const getPullRequestDiff = async () => {
+  const context = github.context;
+
+  // Ensure the event is a pull request
+  if (context.eventName !== "pull_request") {
+    core.setFailed("This action only works for pull requests.");
+    return;
+  }
+
+  // Get the PR details
+  const pr = context.payload.pull_request;
+  const baseSha = pr.base.sha; // Base commit (target branch)
+  const headSha = pr.head.sha; // Head commit (PR branch)
+
+  // Get the diff for each file
+  let diffOutput = "";
+  await exec.exec("git", ["diff", `${baseSha}..${headSha}`], {
+    listeners: {
+      stdout: (data) => {
+        diffOutput += data.toString();
+      },
+    },
+  });
+};
+
+const postPullRequestComment = async (feedback) => {
+  console.log("feedback:", feedback);
+
+  const octokit = new github.getOctokit(process.env.GITHUB_TOKEN);
+
+  // Use pull_request from the context payload
+  const { owner, repo } = github.context.repo;
+  const pull_number = github.context.payload.pull_request.number;
+
+  const formattedComment = `### AI Code Review Feedback\n\n${feedback.text
+    .split("\n")
+    .map((line) => {
+      if (line.startsWith("- **")) {
+        return `#### ${line.slice(4, -4)}\n`; // Convert bold headers to markdown subheadings
+      }
+      return line;
+    })
+    .join("\n")}`;
+
+  await octokit.rest.pulls.createReview({
+    owner,
+    repo,
+    pull_number, // Use the PR number from the payload
+    event: "COMMENT", // Add a comment to the PR
+    body: formattedComment,
+  });
 };
 
 ;// CONCATENATED MODULE: ./index.js
@@ -56272,45 +56324,9 @@ const reviewCode = async (diff) => {
 
 async function run() {
   try {
-    // Access the GitHub context
-    const context = github.context;
-
-    // Ensure the event is a pull request
-    if (context.eventName !== "pull_request") {
-      core.setFailed("This action only works for pull requests.");
-      return;
-    }
-
-    // Get the PR details
-    const pr = context.payload.pull_request;
-    const baseSha = pr.base.sha; // Base commit (target branch)
-    const headSha = pr.head.sha; // Head commit (PR branch)
-
-    // Get the list of changed files using Git
-    let changedFiles = "";
-    await exec.exec("git", ["diff", "--name-only", `${baseSha}..${headSha}`], {
-      listeners: {
-        stdout: (data) => {
-          changedFiles += data.toString();
-        },
-      },
-    });
-
-    const files = changedFiles.split("\n").filter(Boolean);
-    // console.log("Changed Files:", files);
-
-    // Get the diff for each file
-    let diffOutput = "";
-    await exec.exec("git", ["diff", `${baseSha}..${headSha}`], {
-      listeners: {
-        stdout: (data) => {
-          diffOutput += data.toString();
-        },
-      },
-    });
-
-    // console.log("Diff Output:", diffOutput);
-    await reviewCode(diffOutput);
+    const diff = await getPullRequestDiff();
+    const reviewFeedback = await reviewCode(diff);
+    await postPullRequestComment(reviewFeedback);
   } catch (error) {
     core.setFailed(error.message);
   }

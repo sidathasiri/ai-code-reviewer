@@ -5,10 +5,7 @@ import {
 
 const client = new BedrockAgentRuntimeClient({ region: "us-east-1" });
 
-// const code = `const data = await fetchData()`;
-
 export const reviewCode = async (diff) => {
-  console.log("🚀 ~ diff:", diff);
   const retrieveAndGen = await new RetrieveAndGenerateCommand({
     input: {
       text: `As a JavaScript/TypeScript GitHub Pull Request code review expert, please analyze this code for:
@@ -36,8 +33,5 @@ export const reviewCode = async (diff) => {
   });
 
   const { citations, output } = await client.send(retrieveAndGen);
-  // console.log("🚀 ~ citations:", JSON.stringify(citations, null, 2));
-  // console.log("🚀 ~ output:", JSON.stringify(output, null, 2));
-  console.log(output);
-  // return output;
+  return output;
 };
