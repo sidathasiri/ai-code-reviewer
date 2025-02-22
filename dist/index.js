@@ -56218,6 +56218,8 @@ var __webpack_exports__ = {};
 var core = __nccwpck_require__(7484);
 // EXTERNAL MODULE: ./node_modules/@actions/github/lib/github.js
 var github = __nccwpck_require__(3228);
+// EXTERNAL MODULE: ./node_modules/@actions/exec/lib/exec.js
+var exec = __nccwpck_require__(5236);
 // EXTERNAL MODULE: ./node_modules/@aws-sdk/client-bedrock-agent-runtime/dist-cjs/index.js
 var dist_cjs = __nccwpck_require__(7754);
 ;// CONCATENATED MODULE: ./ai-review-service.js
@@ -56225,12 +56227,13 @@ var dist_cjs = __nccwpck_require__(7754);
 
 const client = new dist_cjs.BedrockAgentRuntimeClient({ region: "us-east-1" });
 
-const code = `const data = await fetchData()`;
+// const code = `const data = await fetchData()`;
 
-const reviewCode = async () => {
+const reviewCode = async (diff) => {
+  console.log("🚀 ~ diff:", diff);
   const retrieveAndGen = await new dist_cjs.RetrieveAndGenerateCommand({
     input: {
-      text: `As a JavaScript/TypeScript code review expert, please analyze this code for:
+      text: `As a JavaScript/TypeScript GitHub Pull Request code review expert, please analyze this code for:
   1. Security vulnerabilities (especially around sensitive data handling)
   2. Best practices violations
   3. Performance considerations
@@ -56239,15 +56242,15 @@ const reviewCode = async () => {
   6. Code styling and formatting
   7. Code standards
   
-  Code to review:
-  <>${code}<>
+  Here is code to review from git diff:
+  <>${diff}<>
   
   Please structure your recommendations in bullet points without any additional information. If there are no recommendations, just say no issues found.`,
     },
     retrieveAndGenerateConfiguration: {
       type: "KNOWLEDGE_BASE",
       knowledgeBaseConfiguration: {
-        knowledgeBaseId: "UZFY9J150F",
+        knowledgeBaseId: "YXLPYEUEFA",
         modelArn:
           "arn:aws:bedrock:us-east-1::foundation-model/amazon.nova-pro-v1:0",
       },
@@ -56258,6 +56261,7 @@ const reviewCode = async () => {
   // console.log("🚀 ~ citations:", JSON.stringify(citations, null, 2));
   // console.log("🚀 ~ output:", JSON.stringify(output, null, 2));
   console.log(output);
+  // return output;
 };
 
 ;// CONCATENATED MODULE: ./index.js
@@ -56265,23 +56269,52 @@ const reviewCode = async () => {
 
 
 
-function run() {
+
+async function run() {
   try {
-    // Get input from the workflow file (if any)
-    const nameToGreet = core.getInput("who-to-greet");
-    console.log(`Hello, ${nameToGreet || "World"}!`);
+    // Access the GitHub context
+    const context = github.context;
 
-    // Set an output for the action
-    // core.setOutput("greeting", `Hello, ${nameToGreet || "World"}!`);
+    // Ensure the event is a pull request
+    if (context.eventName !== "pull_request") {
+      core.setFailed("This action only works for pull requests.");
+      return;
+    }
 
-    // Log the context (optional)
-    // console.log(JSON.stringify(github.context, null, 2));
+    // Get the PR details
+    const pr = context.payload.pull_request;
+    const baseSha = pr.base.sha; // Base commit (target branch)
+    const headSha = pr.head.sha; // Head commit (PR branch)
 
-    reviewCode();
+    // Get the list of changed files using Git
+    let changedFiles = "";
+    await exec.exec("git", ["diff", "--name-only", `${baseSha}..${headSha}`], {
+      listeners: {
+        stdout: (data) => {
+          changedFiles += data.toString();
+        },
+      },
+    });
+
+    const files = changedFiles.split("\n").filter(Boolean);
+    // console.log("Changed Files:", files);
+
+    // Get the diff for each file
+    let diffOutput = "";
+    await exec.exec("git", ["diff", `${baseSha}..${headSha}`], {
+      listeners: {
+        stdout: (data) => {
+          diffOutput += data.toString();
+        },
+      },
+    });
+
+    // console.log("Diff Output:", diffOutput);
+    await reviewCode(diffOutput);
   } catch (error) {
     core.setFailed(error.message);
   }
 }
 
-run();
+run().then();
 
