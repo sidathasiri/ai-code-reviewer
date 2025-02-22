@@ -1,17 +1,14 @@
-name: Hello World Workflow
+name: Pull Request Code Review
 
-on:
-  push:
-    branches:
-      - main
+on: pull_request
 
 jobs:
-  hello:
+  pull-request-review:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-    
+
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -22,11 +19,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run Hello World Action
-        id: hello
+      - name: AI Review
+        id: ai-review
         uses: ./ # Use the action in the current repository
-        with:
-          who-to-greet: "GitHub"
-
-      - name: Display the greeting
-        run: echo "${{ steps.hello.outputs.greeting }}"
+        # with:
+        #   who-to-greet: "GitHub"
