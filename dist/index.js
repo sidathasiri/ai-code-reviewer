@@ -56287,6 +56287,7 @@ const getPullRequestDiff = async () => {
       },
     },
   });
+  return diffOutput;
 };
 
 const postPullRequestComment = async (feedback) => {

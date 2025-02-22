@@ -25,6 +25,7 @@ export const getPullRequestDiff = async () => {
       },
     },
   });
+  return diffOutput;
 };
 
 export const postPullRequestComment = async (feedback) => {
