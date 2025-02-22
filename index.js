@@ -1,5 +1,6 @@
 import * as core from "@actions/core";
 import * as github from "@actions/github";
+import * as exec from "@actions/exec";
 import { reviewCode } from "./ai-review-service.js";
 
 async function run() {
