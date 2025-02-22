@@ -12,6 +12,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Install dependencies
+        run: npm ci
+
       - name: Run Hello World Action
         id: hello
         uses: ./ # Use the action in the current repository
