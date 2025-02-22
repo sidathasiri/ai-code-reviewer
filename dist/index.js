@@ -56224,6 +56224,7 @@ var dist_cjs = __nccwpck_require__(7754);
 const client = new dist_cjs.BedrockAgentRuntimeClient({ region: "us-east-1" });
 
 const reviewCode = async (diff) => {
+  console.log("🚀 ~ diff:", diff);
   const retrieveAndGen = await new dist_cjs.RetrieveAndGenerateCommand({
     input: {
       text: `As a JavaScript/TypeScript GitHub Pull Request code review expert, please analyze this code for:
@@ -56289,7 +56290,7 @@ const getPullRequestDiff = async () => {
 };
 
 const postPullRequestComment = async (feedback) => {
-  console.log("feedback:", feedback);
+  console.log("🚀 ~ feedback:", feedback);
 
   const octokit = new github.getOctokit(process.env.GITHUB_TOKEN);
 

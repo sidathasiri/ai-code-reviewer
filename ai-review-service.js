@@ -6,6 +6,7 @@ import {
 const client = new BedrockAgentRuntimeClient({ region: "us-east-1" });
 
 export const reviewCode = async (diff) => {
+  console.log("🚀 ~ diff:", diff);
   const retrieveAndGen = await new RetrieveAndGenerateCommand({
     input: {
       text: `As a JavaScript/TypeScript GitHub Pull Request code review expert, please analyze this code for:

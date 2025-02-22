@@ -28,7 +28,7 @@ export const getPullRequestDiff = async () => {
 };
 
 export const postPullRequestComment = async (feedback) => {
-  console.log("feedback:", feedback);
+  console.log("🚀 ~ feedback:", feedback);
 
   const octokit = new github.getOctokit(process.env.GITHUB_TOKEN);
 
