@@ -1,5 +1,6 @@
 import * as core from "@actions/core";
 import * as github from "@actions/github";
+import { reviewCode } from "./ai-review-service.js";
 
 function run() {
   try {
@@ -8,10 +9,12 @@ function run() {
     console.log(`Hello, ${nameToGreet || "World"}!`);
 
     // Set an output for the action
-    core.setOutput("greeting", `Hello, ${nameToGreet || "World"}!`);
+    // core.setOutput("greeting", `Hello, ${nameToGreet || "World"}!`);
 
     // Log the context (optional)
-    console.log(JSON.stringify(github.context, null, 2));
+    // console.log(JSON.stringify(github.context, null, 2));
+
+    reviewCode();
   } catch (error) {
     core.setFailed(error.message);
   }
