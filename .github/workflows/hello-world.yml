@@ -8,6 +8,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.sha }} # Checkout the PR branch
+          fetch-depth: 0 # Fetch the full history
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
@@ -22,5 +25,3 @@ jobs:
       - name: AI Review
         id: ai-review
         uses: ./ # Use the action in the current repository
-        # with:
-        #   who-to-greet: "GitHub"

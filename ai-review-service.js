@@ -5,12 +5,13 @@ import {
 
 const client = new BedrockAgentRuntimeClient({ region: "us-east-1" });
 
-const code = `const data = await fetchData()`;
+// const code = `const data = await fetchData()`;
 
-export const reviewCode = async () => {
+export const reviewCode = async (diff) => {
+  console.log("🚀 ~ diff:", diff);
   const retrieveAndGen = await new RetrieveAndGenerateCommand({
     input: {
-      text: `As a JavaScript/TypeScript code review expert, please analyze this code for:
+      text: `As a JavaScript/TypeScript GitHub Pull Request code review expert, please analyze this code for:
   1. Security vulnerabilities (especially around sensitive data handling)
   2. Best practices violations
   3. Performance considerations
@@ -19,15 +20,15 @@ export const reviewCode = async () => {
   6. Code styling and formatting
   7. Code standards
   
-  Code to review:
-  <>${code}<>
+  Here is code to review from git diff:
+  <>${diff}<>
   
   Please structure your recommendations in bullet points without any additional information. If there are no recommendations, just say no issues found.`,
     },
     retrieveAndGenerateConfiguration: {
       type: "KNOWLEDGE_BASE",
       knowledgeBaseConfiguration: {
-        knowledgeBaseId: "UZFY9J150F",
+        knowledgeBaseId: "YXLPYEUEFA",
         modelArn:
           "arn:aws:bedrock:us-east-1::foundation-model/amazon.nova-pro-v1:0",
       },
@@ -38,4 +39,5 @@ export const reviewCode = async () => {
   // console.log("🚀 ~ citations:", JSON.stringify(citations, null, 2));
   // console.log("🚀 ~ output:", JSON.stringify(output, null, 2));
   console.log(output);
+  // return output;
 };
