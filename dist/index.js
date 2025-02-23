@@ -56273,14 +56273,15 @@ const splitTextIntoChunks = (text, chunkSize) => {
 const client = new dist_cjs.BedrockAgentRuntimeClient({ region: "us-east-1" });
 
 const reviewCode = async (diff) => {
-  // Split the diff into chunks of 15,000 characters (adjust as needed)
+  // Split the diff into chunks of 15,000 characters
   const chunks = splitTextIntoChunks(diff, 15000);
 
-  let allRecommendations = "";
-
-  // Process each chunk separately
-  for (const chunk of chunks) {
-    console.log("Processing chunk size:", chunk.length);
+  // Process all chunks concurrently
+  const chunkPromises = chunks.map(async (chunk, index) => {
+    console.log(
+      `Processing chunk ${index + 1}/${chunks.length}, size:`,
+      chunk.length
+    );
     const retrieveAndGen = new dist_cjs.RetrieveAndGenerateCommand({
       input: {
         text: `As a GitHub Pull Request code review expert, analyze the following code diff from the pull request and provide the recommendations only for improvements.
@@ -56304,10 +56305,20 @@ const reviewCode = async (diff) => {
       },
     });
 
-    const { output } = await client.send(retrieveAndGen);
-    allRecommendations += output.text + "\n";
-  }
+    try {
+      const { output } = await client.send(retrieveAndGen);
+      return output.text;
+    } catch (error) {
+      console.error(`Error processing chunk ${index + 1}:`, error);
+      return ""; // Return empty string for failed chunks
+    }
+  });
 
+  // Wait for all chunks to be processed
+  const results = await Promise.all(chunkPromises);
+
+  // Combine all results
+  const allRecommendations = results.join("\n");
   return { text: allRecommendations };
 };
 
