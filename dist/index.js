@@ -56218,44 +56218,6 @@ var __webpack_exports__ = {};
 var core = __nccwpck_require__(7484);
 // EXTERNAL MODULE: ./node_modules/@aws-sdk/client-bedrock-agent-runtime/dist-cjs/index.js
 var dist_cjs = __nccwpck_require__(7754);
-;// CONCATENATED MODULE: ./ai-review-service.js
-
-
-const client = new dist_cjs.BedrockAgentRuntimeClient({ region: "us-east-1" });
-
-const reviewCode = async (diff) => {
-  console.log("🚀 ~ diff:", diff);
-  const retrieveAndGen = await new dist_cjs.RetrieveAndGenerateCommand({
-    input: {
-      text: `As a GitHub Pull Request code review expert, analyze the following code diff from the pull request and provide the recommendations only for improvements.
-      For each issue or recommendation, specify the file path and line number(s) in the format:
-
-      **File**: <file-path>
-      **Line**: <line-number>
-      **Feedback**: <your-feedback>
-  
-      Here is code to review from git diff:
-      <>${diff}<>
-      Ensure that the line numbers are correct and the feedback is relevant to the code to put review comments on the correct lines.`,
-    },
-    retrieveAndGenerateConfiguration: {
-      type: "KNOWLEDGE_BASE",
-      knowledgeBaseConfiguration: {
-        knowledgeBaseId: "V2CLQKSHN1",
-        modelArn:
-          "arn:aws:bedrock:us-east-1::foundation-model/amazon.nova-pro-v1:0",
-      },
-    },
-  });
-
-  const { output } = await client.send(retrieveAndGen);
-  return output;
-};
-
-// EXTERNAL MODULE: ./node_modules/@actions/github/lib/github.js
-var lib_github = __nccwpck_require__(3228);
-// EXTERNAL MODULE: ./node_modules/@actions/exec/lib/exec.js
-var exec = __nccwpck_require__(5236);
 ;// CONCATENATED MODULE: ./utils.js
 const parseAIFeedback = (feedbackText) => {
   const feedbacks = [];
@@ -56295,6 +56257,63 @@ function utils_formatAIFeedbackComment(feedbackText) {
     .join("\n")}`;
 }
 
+const splitTextIntoChunks = (text, chunkSize) => {
+  const chunks = [];
+  for (let i = 0; i < text.length; i += chunkSize) {
+    chunks.push(text.slice(i, i + chunkSize));
+  }
+  console.log("Number of chunks:", chunks.length);
+  return chunks;
+};
+
+;// CONCATENATED MODULE: ./ai-review-service.js
+
+
+
+const client = new dist_cjs.BedrockAgentRuntimeClient({ region: "us-east-1" });
+
+const reviewCode = async (diff) => {
+  // Split the diff into chunks of 20,000 characters (adjust as needed)
+  const chunks = splitTextIntoChunks(diff, 20000);
+
+  let allRecommendations = "";
+
+  // Process each chunk separately
+  for (const chunk of chunks) {
+    const retrieveAndGen = new dist_cjs.RetrieveAndGenerateCommand({
+      input: {
+        text: `As a GitHub Pull Request code review expert, analyze the following code diff from the pull request and provide the recommendations only for improvements.
+        For each issue or recommendation, specify the file path and line number(s) in the format:
+
+        **File**: <file-path>
+        **Line**: <line-number>
+        **Feedback**: <your-feedback>
+    
+        Here is code to review from git diff:
+        <>${chunk}<>
+        Ensure that the line numbers are correct and the feedback is relevant to the code to put review comments on the correct lines.`,
+      },
+      retrieveAndGenerateConfiguration: {
+        type: "KNOWLEDGE_BASE",
+        knowledgeBaseConfiguration: {
+          knowledgeBaseId: "V2CLQKSHN1",
+          modelArn:
+            "arn:aws:bedrock:us-east-1::foundation-model/amazon.nova-pro-v1:0",
+        },
+      },
+    });
+
+    const { output } = await client.send(retrieveAndGen);
+    allRecommendations += output.text + "\n";
+  }
+
+  return { text: allRecommendations };
+};
+
+// EXTERNAL MODULE: ./node_modules/@actions/github/lib/github.js
+var lib_github = __nccwpck_require__(3228);
+// EXTERNAL MODULE: ./node_modules/@actions/exec/lib/exec.js
+var exec = __nccwpck_require__(5236);
 ;// CONCATENATED MODULE: ./node_modules/diff/lib/index.mjs
 function Diff() {}
 Diff.prototype = {

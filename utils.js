@@ -35,3 +35,12 @@ export function formatAIFeedbackComment(feedbackText) {
     })
     .join("\n")}`;
 }
+
+export const splitTextIntoChunks = (text, chunkSize) => {
+  const chunks = [];
+  for (let i = 0; i < text.length; i += chunkSize) {
+    chunks.push(text.slice(i, i + chunkSize));
+  }
+  console.log("Number of chunks:", chunks.length);
+  return chunks;
+};
