@@ -30,6 +30,7 @@ export const reviewCode = async (diff) => {
   });
 
   const { citations, output } = await client.send(retrieveAndGen);
-  console.log("citations:", citations);
+  console.log("citations:", JSON.stringify(citations, null, 2));
+  console.log("output:", output);
   return output;
 };

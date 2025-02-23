@@ -10,7 +10,7 @@ async function run() {
   try {
     const diff = await getPullRequestDiff();
     const reviewFeedback = await reviewCode(diff);
-    await postAIFeedbackComments(reviewFeedback);
+    await postAIFeedbackComments(reviewFeedback, diff);
   } catch (error) {
     core.setFailed(error.message);
   }

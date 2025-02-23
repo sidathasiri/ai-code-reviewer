@@ -58,20 +58,9 @@ export const postPullRequestComment = async (feedback) => {
   });
 };
 
-async function getDiffMap(baseSha, headSha) {
-  let diffOutput = "";
-
-  // Get the git diff
-  await exec.exec("git", ["diff", `${baseSha}..${headSha}`], {
-    listeners: {
-      stdout: (data) => {
-        diffOutput += data.toString();
-      },
-    },
-  });
-
+async function getDiffMap(diff) {
   // Parse the diff to create a mapping of old to new line numbers
-  const parsedDiff = parsePatch(diffOutput);
+  const parsedDiff = parsePatch(diff);
   const lineMapping = new Map();
 
   for (const file of parsedDiff) {
@@ -100,7 +89,7 @@ async function getDiffMap(baseSha, headSha) {
   return lineMapping;
 }
 
-export async function postAIFeedbackComments(feedback) {
+export async function postAIFeedbackComments(feedback, diff) {
   const octokit = new github.getOctokit(process.env.GITHUB_TOKEN);
   const { owner, repo } = github.context.repo;
   const pull_number = github.context.payload.pull_request.number;
@@ -113,10 +102,7 @@ export async function postAIFeedbackComments(feedback) {
   });
 
   // Get the line number mapping from diff
-  const lineMapping = await getDiffMap(
-    process.env.BASE_SHA,
-    process.env.HEAD_SHA
-  );
+  const lineMapping = await getDiffMap(diff);
 
   // Parse the AI feedback
   const parsedFeedbacks = parseAIFeedback(feedback.text);
