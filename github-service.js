@@ -1,7 +1,7 @@
 import * as github from "@actions/github";
 import * as exec from "@actions/exec";
 import * as core from "@actions/core";
-import { parseFeedback } from "./utils";
+import { parseFeedback } from "./utils.js";
 
 export const getPullRequestDiff = async () => {
   const context = github.context;
