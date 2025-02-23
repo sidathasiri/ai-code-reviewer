@@ -4,6 +4,8 @@ import * as core from "@actions/core";
 import { parseAIFeedback } from "./utils.js";
 import { parsePatch } from "diff";
 
+const BOT_SIGNATURE = "<!-- ai-review-bot -->";
+
 export const getPullRequestDiff = async () => {
   const context = github.context;
 
@@ -127,9 +129,11 @@ export async function postAIFeedbackComments(feedback, diff) {
         ? fileMapping.get(feedback.line) || feedback.line
         : feedback.line;
 
+      const commentBody = `${feedback.feedback}\n\n${BOT_SIGNATURE}`;
+
       reviewComments.push({
         path: feedback.file,
-        body: feedback.feedback,
+        body: commentBody,
         line: mappedLine,
         side: "RIGHT",
       });
@@ -174,12 +178,10 @@ export const deleteExistingBotComments = async (
       pull_number,
     });
 
-    // Get the bot's authentication information
-    const { data: botAuth } = await octokit.rest.users.getAuthenticated();
-    const botId = botAuth.id;
-
     // Filter comments made by our bot
-    const botComments = comments.filter((comment) => comment.user.id === botId);
+    const botComments = comments.filter((comment) =>
+      comment.body.includes(BOT_SIGNATURE)
+    );
 
     // Delete each bot comment
     for (const comment of botComments) {

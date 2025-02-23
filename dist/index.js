@@ -56248,7 +56248,7 @@ const reviewCode = async (diff) => {
   });
 
   const { citations, output } = await client.send(retrieveAndGen);
-  console.log("citations:", JSON.stringify(citations, null, 2));
+  // console.log("citations:", JSON.stringify(citations, null, 2));
   console.log("output:", output);
   return output;
 };
@@ -58334,6 +58334,8 @@ function escapeHTML(s) {
 
 
 
+const BOT_SIGNATURE = "<!-- ai-review-bot -->";
+
 const getPullRequestDiff = async () => {
   const context = lib_github.context;
 
@@ -58457,9 +58459,11 @@ async function postAIFeedbackComments(feedback, diff) {
         ? fileMapping.get(feedback.line) || feedback.line
         : feedback.line;
 
+      const commentBody = `${feedback.feedback}\n\n${BOT_SIGNATURE}`;
+
       reviewComments.push({
         path: feedback.file,
-        body: feedback.feedback,
+        body: commentBody,
         line: mappedLine,
         side: "RIGHT",
       });
@@ -58504,12 +58508,10 @@ const deleteExistingBotComments = async (
       pull_number,
     });
 
-    // Get the bot's authentication information
-    const { data: botAuth } = await octokit.rest.users.getAuthenticated();
-    const botId = botAuth.id;
-
     // Filter comments made by our bot
-    const botComments = comments.filter((comment) => comment.user.id === botId);
+    const botComments = comments.filter((comment) =>
+      comment.body.includes(BOT_SIGNATURE)
+    );
 
     // Delete each bot comment
     for (const comment of botComments) {
