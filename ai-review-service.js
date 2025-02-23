@@ -17,7 +17,8 @@ export const reviewCode = async (diff) => {
       **Feedback**: <your-feedback>
   
       Here is code to review from git diff:
-      <>${diff}<>`,
+      <>${diff}<>
+      Ensure that the line numbers are correct and the feedback is relevant to the code to put review comments on the correct lines.`,
     },
     retrieveAndGenerateConfiguration: {
       type: "KNOWLEDGE_BASE",
