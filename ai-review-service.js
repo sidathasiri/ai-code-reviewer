@@ -9,7 +9,7 @@ export const reviewCode = async (diff) => {
   console.log("🚀 ~ diff:", diff);
   const retrieveAndGen = await new RetrieveAndGenerateCommand({
     input: {
-      text: `As a GitHub Pull Request code review expert, analyze the following code diff from the pull request.
+      text: `As a GitHub Pull Request code review expert, analyze the following code diff from the pull request and provide the recommendations only for improvements.
       For each issue or recommendation, specify the file path and line number(s) in the format:
 
       **File**: <file-path>

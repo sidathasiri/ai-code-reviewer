@@ -54309,6 +54309,14 @@ function wrappy (fn, cb) {
 
 /***/ }),
 
+/***/ 3271:
+/***/ ((module) => {
+
+module.exports = eval("require")("./utils");
+
+
+/***/ }),
+
 /***/ 2613:
 /***/ ((module) => {
 
@@ -56227,7 +56235,7 @@ const reviewCode = async (diff) => {
   console.log("🚀 ~ diff:", diff);
   const retrieveAndGen = await new dist_cjs.RetrieveAndGenerateCommand({
     input: {
-      text: `As a GitHub Pull Request code review expert, analyze the following code diff from the pull request.
+      text: `As a GitHub Pull Request code review expert, analyze the following code diff from the pull request and provide the recommendations only for improvements.
       For each issue or recommendation, specify the file path and line number(s) in the format:
 
       **File**: <file-path>
@@ -56253,16 +56261,19 @@ const reviewCode = async (diff) => {
 };
 
 // EXTERNAL MODULE: ./node_modules/@actions/github/lib/github.js
-var github = __nccwpck_require__(3228);
+var lib_github = __nccwpck_require__(3228);
 // EXTERNAL MODULE: ./node_modules/@actions/exec/lib/exec.js
 var exec = __nccwpck_require__(5236);
+// EXTERNAL MODULE: ./node_modules/@vercel/ncc/dist/ncc/@@notfound.js?./utils
+var _notfoundutils = __nccwpck_require__(3271);
 ;// CONCATENATED MODULE: ./github-service.js
 
 
 
 
+
 const getPullRequestDiff = async () => {
-  const context = github.context;
+  const context = lib_github.context;
 
   // Ensure the event is a pull request
   if (context.eventName !== "pull_request") {
@@ -56315,6 +56326,27 @@ const postPullRequestComment = async (feedback) => {
   });
 };
 
+const postLineLevelComments = async (feedback) => {
+  const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
+
+  const { owner, repo } = lib_github.context.repo;
+  const pull_number = lib_github.context.payload.pull_request.number;
+
+  // Parse the feedback into line-level comments
+  const comments = (0,_notfoundutils.parseFeedback)(feedback.text);
+
+  // Post the comments on the PR
+  await octokit.rest.pulls.createReview({
+    owner,
+    repo,
+    pull_number,
+    event: "COMMENT", // Add comments without approving or requesting changes
+    comments, // Array of line-level comments
+  });
+
+  console.log("Line-level comments posted to PR.");
+};
+
 ;// CONCATENATED MODULE: ./index.js
 
 
@@ -56325,7 +56357,7 @@ async function run() {
   try {
     const diff = await getPullRequestDiff();
     const reviewFeedback = await reviewCode(diff);
-    await postPullRequestComment(reviewFeedback);
+    await postLineLevelComments(reviewFeedback);
   } catch (error) {
     core.setFailed(error.message);
   }

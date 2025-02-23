@@ -1,6 +1,7 @@
 import * as github from "@actions/github";
 import * as exec from "@actions/exec";
 import * as core from "@actions/core";
+import { parseFeedback } from "./utils";
 
 export const getPullRequestDiff = async () => {
   const context = github.context;
@@ -54,4 +55,25 @@ export const postPullRequestComment = async (feedback) => {
     event: "COMMENT", // Add a comment to the PR
     body: formattedComment,
   });
+};
+
+export const postLineLevelComments = async (feedback) => {
+  const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
+
+  const { owner, repo } = github.context.repo;
+  const pull_number = github.context.payload.pull_request.number;
+
+  // Parse the feedback into line-level comments
+  const comments = parseFeedback(feedback.text);
+
+  // Post the comments on the PR
+  await octokit.rest.pulls.createReview({
+    owner,
+    repo,
+    pull_number,
+    event: "COMMENT", // Add comments without approving or requesting changes
+    comments, // Array of line-level comments
+  });
+
+  console.log("Line-level comments posted to PR.");
 };
