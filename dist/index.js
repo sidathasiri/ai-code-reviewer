@@ -56342,7 +56342,8 @@ const postPullRequestComment = async (feedback) => {
 };
 
 const postLineLevelComments = async (feedback) => {
-  const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
+  console.log("🚀 ~ feedback:", feedback);
+  const octokit = new lib_github.getOctokit(process.env.GITHUB_TOKEN);
 
   const { owner, repo } = lib_github.context.repo;
   const pull_number = lib_github.context.payload.pull_request.number;
