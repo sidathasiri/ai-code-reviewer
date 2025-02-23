@@ -58424,6 +58424,8 @@ async function postAIFeedbackComments(feedback, diff) {
   const { owner, repo } = lib_github.context.repo;
   const pull_number = lib_github.context.payload.pull_request.number;
 
+  await deleteExistingBotComments(octokit, owner, repo, pull_number);
+
   // Get PR files
   const { data: prFiles } = await octokit.rest.pulls.listFiles({
     owner,
@@ -58487,6 +58489,43 @@ async function postAIFeedbackComments(feedback, diff) {
     }
   }
 }
+
+const deleteExistingBotComments = async (
+  octokit,
+  owner,
+  repo,
+  pull_number
+) => {
+  try {
+    // Get all review comments on the PR
+    const { data: comments } = await octokit.rest.pulls.listReviewComments({
+      owner,
+      repo,
+      pull_number,
+    });
+
+    // Get the bot's authentication information
+    const { data: botAuth } = await octokit.rest.users.getAuthenticated();
+    const botId = botAuth.id;
+
+    // Filter comments made by our bot
+    const botComments = comments.filter((comment) => comment.user.id === botId);
+
+    // Delete each bot comment
+    for (const comment of botComments) {
+      await octokit.rest.pulls.deleteReviewComment({
+        owner,
+        repo,
+        comment_id: comment.id,
+      });
+      console.log(`Deleted comment ${comment.id}`);
+    }
+
+    console.log(`Deleted ${botComments.length} previous bot comments`);
+  } catch (error) {
+    console.error("Error deleting existing comments:", error);
+  }
+};
 
 ;// CONCATENATED MODULE: ./index.js
 
