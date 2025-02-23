@@ -1,7 +1,8 @@
 import * as github from "@actions/github";
 import * as exec from "@actions/exec";
 import * as core from "@actions/core";
-import { parseFeedback } from "./utils.js";
+import { parseAIFeedback } from "./utils.js";
+import { parsePatch } from "diff";
 
 export const getPullRequestDiff = async () => {
   const context = github.context;
@@ -57,27 +58,116 @@ export const postPullRequestComment = async (feedback) => {
   });
 };
 
-export async function postFileLevelComments(feedback) {
-  console.log("🚀 ~ feedback:", feedback);
-  const octokit = new github.getOctokit(process.env.GITHUB_TOKEN);
+async function getDiffMap(baseSha, headSha) {
+  let diffOutput = "";
 
+  // Get the git diff
+  await exec.exec("git", ["diff", `${baseSha}..${headSha}`], {
+    listeners: {
+      stdout: (data) => {
+        diffOutput += data.toString();
+      },
+    },
+  });
+
+  // Parse the diff to create a mapping of old to new line numbers
+  const parsedDiff = parsePatch(diffOutput);
+  const lineMapping = new Map();
+
+  for (const file of parsedDiff) {
+    const filename = file.newFileName;
+    lineMapping.set(filename, new Map());
+
+    let newLineNumber = 0;
+    let diffLineNumber = 0;
+
+    for (const hunk of file.hunks) {
+      newLineNumber = hunk.newStart;
+
+      for (const line of hunk.lines) {
+        if (line[0] === " " || line[0] === "+") {
+          // Map the diff line number to the actual file line number
+          lineMapping.get(filename).set(diffLineNumber, newLineNumber);
+          newLineNumber++;
+        }
+        if (line[0] !== "-") {
+          diffLineNumber++;
+        }
+      }
+    }
+  }
+
+  return lineMapping;
+}
+
+export async function postAIFeedbackComments(feedback) {
+  const octokit = new github.getOctokit(process.env.GITHUB_TOKEN);
   const { owner, repo } = github.context.repo;
   const pull_number = github.context.payload.pull_request.number;
 
-  // Parse the feedback into file-level comments
-  const comments = parseFeedback(feedback.text);
+  // Get PR files
+  const { data: prFiles } = await octokit.rest.pulls.listFiles({
+    owner,
+    repo,
+    pull_number,
+  });
 
-  // Post the comments on the PR
-  for (const comment of comments) {
-    await octokit.rest.pulls.createReviewComment({
-      owner,
-      repo,
-      pull_number,
-      body: comment.body,
-      path: comment.path, // File path
-      commit_id: github.context.payload.pull_request.head.sha, // Commit SHA of the PR branch
-    });
+  // Get the line number mapping from diff
+  const lineMapping = await getDiffMap(
+    process.env.BASE_SHA,
+    process.env.HEAD_SHA
+  );
 
-    console.log("Comment posted to PR.", comment);
+  // Parse the AI feedback
+  const parsedFeedbacks = parseAIFeedback(feedback.text);
+
+  // Create a review with all comments
+  const reviewComments = [];
+
+  for (const feedback of parsedFeedbacks) {
+    try {
+      const prFile = prFiles.find((f) => f.filename === feedback.file);
+
+      if (!prFile) {
+        console.warn(`File ${feedback.file} not found in PR`);
+        continue;
+      }
+
+      // Get the correct line number from our mapping
+      const fileMapping = lineMapping.get(feedback.file);
+      const mappedLine = fileMapping
+        ? fileMapping.get(feedback.line) || feedback.line
+        : feedback.line;
+
+      reviewComments.push({
+        path: feedback.file,
+        body: feedback.feedback,
+        line: mappedLine,
+        side: "RIGHT",
+      });
+
+      console.log(
+        `Mapped line ${feedback.line} to ${mappedLine} for ${feedback.file}`
+      );
+    } catch (error) {
+      console.error(`Error processing feedback for ${feedback.file}:`, error);
+    }
+  }
+
+  // Post all comments as a single review
+  if (reviewComments.length > 0) {
+    try {
+      await octokit.rest.pulls.createReview({
+        owner,
+        repo,
+        pull_number,
+        commit_id: headSha,
+        event: "COMMENT",
+        comments: reviewComments,
+      });
+      console.log(`Posted ${reviewComments.length} review comments`);
+    } catch (error) {
+      console.error("Error posting review:", error);
+    }
   }
 }

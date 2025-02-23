@@ -1,18 +1,25 @@
-export const parseFeedback = (feedbackText) => {
-  const comments = [];
-  const regex =
-    /\*\*File\*\*: (.+)\n\*\*Feedback\*\*: (.+?)(?=\n\*\*File\*\*:|$)/gs;
-  let match;
+export const parseAIFeedback = (feedbackText) => {
+  const feedbacks = [];
 
-  while ((match = regex.exec(feedbackText))) {
-    const filePath = match[1];
-    const body = match[2].trim();
+  // Split the text by "**File**:" to get each feedback block
+  const blocks = feedbackText
+    .split("**File**:")
+    .filter((block) => block.trim());
 
-    comments.push({
-      path: filePath, // File path
-      body: `**Feedback**: ${body}`, // Feedback message
-    });
+  for (const block of blocks) {
+    // Extract file, line, and feedback using regex
+    const fileMatch = block.match(/([^*\n]+)/);
+    const lineMatch = block.match(/\*\*Line\*\*:\s*(\d+)/);
+    const feedbackMatch = block.match(/\*\*Feedback\*\*:\s*([^*]+)/);
+
+    if (fileMatch && lineMatch && feedbackMatch) {
+      feedbacks.push({
+        file: fileMatch[1].trim(),
+        line: parseInt(lineMatch[1], 10),
+        feedback: feedbackMatch[1].trim(),
+      });
+    }
   }
 
-  return comments;
+  return feedbacks;
 };

@@ -1,13 +1,16 @@
 import * as core from "@actions/core";
 
 import { reviewCode } from "./ai-review-service.js";
-import { getPullRequestDiff, postFileLevelComments } from "./github-service.js";
+import {
+  getPullRequestDiff,
+  postAIFeedbackComments,
+} from "./github-service.js";
 
 async function run() {
   try {
     const diff = await getPullRequestDiff();
     const reviewFeedback = await reviewCode(diff);
-    await postFileLevelComments(reviewFeedback);
+    await postAIFeedbackComments(reviewFeedback);
   } catch (error) {
     core.setFailed(error.message);
   }
