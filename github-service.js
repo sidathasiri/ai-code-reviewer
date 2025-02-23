@@ -1,7 +1,7 @@
 import * as github from "@actions/github";
 import * as exec from "@actions/exec";
 import * as core from "@actions/core";
-import { parseAIFeedback } from "./utils.js";
+import { formatAIFeedbackComment, parseAIFeedback } from "./utils.js";
 import { parsePatch } from "diff";
 
 const BOT_SIGNATURE = "<!-- ai-review-bot -->";
@@ -33,23 +33,13 @@ export const getPullRequestDiff = async () => {
 };
 
 export const postPullRequestComment = async (feedback) => {
-  console.log("🚀 ~ feedback:", feedback);
-
   const octokit = new github.getOctokit(process.env.GITHUB_TOKEN);
 
   // Use pull_request from the context payload
   const { owner, repo } = github.context.repo;
   const pull_number = github.context.payload.pull_request.number;
 
-  const formattedComment = `### AI Code Review Feedback\n\n${feedback.text
-    .split("\n")
-    .map((line) => {
-      if (line.startsWith("- **")) {
-        return `#### ${line.slice(4, -4)}\n`; // Convert bold headers to markdown subheadings
-      }
-      return line;
-    })
-    .join("\n")}`;
+  const formattedComment = formatAIFeedbackComment(feedback.text);
 
   await octokit.rest.pulls.createReview({
     owner,
@@ -87,7 +77,6 @@ async function getDiffMap(diff) {
       }
     }
   }
-
   return lineMapping;
 }
 
@@ -164,12 +153,7 @@ export async function postAIFeedbackComments(feedback, diff) {
   }
 }
 
-export const deleteExistingBotComments = async (
-  octokit,
-  owner,
-  repo,
-  pull_number
-) => {
+const deleteExistingBotComments = async (octokit, owner, repo, pull_number) => {
   try {
     // Get all review comments on the PR
     const { data: comments } = await octokit.rest.pulls.listReviewComments({

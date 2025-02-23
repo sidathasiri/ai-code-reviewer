@@ -23,3 +23,15 @@ export const parseAIFeedback = (feedbackText) => {
 
   return feedbacks;
 };
+
+export function formatAIFeedbackComment(feedbackText) {
+  return `### AI Code Review Feedback\n\n${feedbackText
+    .split("\n")
+    .map((line) => {
+      if (line.startsWith("- **")) {
+        return `#### ${line.slice(4, -4)}\n`; // Convert bold headers to markdown subheadings
+      }
+      return line;
+    })
+    .join("\n")}`;
+}

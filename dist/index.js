@@ -56247,9 +56247,7 @@ const reviewCode = async (diff) => {
     },
   });
 
-  const { citations, output } = await client.send(retrieveAndGen);
-  // console.log("citations:", JSON.stringify(citations, null, 2));
-  console.log("output:", output);
+  const { output } = await client.send(retrieveAndGen);
   return output;
 };
 
@@ -56283,6 +56281,18 @@ const parseAIFeedback = (feedbackText) => {
 
   return feedbacks;
 };
+
+function utils_formatAIFeedbackComment(feedbackText) {
+  return `### AI Code Review Feedback\n\n${feedbackText
+    .split("\n")
+    .map((line) => {
+      if (line.startsWith("- **")) {
+        return `#### ${line.slice(4, -4)}\n`; // Convert bold headers to markdown subheadings
+      }
+      return line;
+    })
+    .join("\n")}`;
+}
 
 ;// CONCATENATED MODULE: ./node_modules/diff/lib/index.mjs
 function Diff() {}
@@ -58363,23 +58373,13 @@ const getPullRequestDiff = async () => {
 };
 
 const postPullRequestComment = async (feedback) => {
-  console.log("🚀 ~ feedback:", feedback);
-
   const octokit = new github.getOctokit(process.env.GITHUB_TOKEN);
 
   // Use pull_request from the context payload
   const { owner, repo } = github.context.repo;
   const pull_number = github.context.payload.pull_request.number;
 
-  const formattedComment = `### AI Code Review Feedback\n\n${feedback.text
-    .split("\n")
-    .map((line) => {
-      if (line.startsWith("- **")) {
-        return `#### ${line.slice(4, -4)}\n`; // Convert bold headers to markdown subheadings
-      }
-      return line;
-    })
-    .join("\n")}`;
+  const formattedComment = formatAIFeedbackComment(feedback.text);
 
   await octokit.rest.pulls.createReview({
     owner,
@@ -58417,7 +58417,6 @@ async function getDiffMap(diff) {
       }
     }
   }
-
   return lineMapping;
 }
 
@@ -58494,12 +58493,7 @@ async function postAIFeedbackComments(feedback, diff) {
   }
 }
 
-const deleteExistingBotComments = async (
-  octokit,
-  owner,
-  repo,
-  pull_number
-) => {
+const deleteExistingBotComments = async (octokit, owner, repo, pull_number) => {
   try {
     // Get all review comments on the PR
     const { data: comments } = await octokit.rest.pulls.listReviewComments({
