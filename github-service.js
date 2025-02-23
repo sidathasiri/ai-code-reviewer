@@ -135,6 +135,8 @@ export async function postAIFeedbackComments(feedback, diff) {
     }
   }
 
+  console.log("Review comments to be posted:", reviewComments.length);
+
   // Post all comments as a single review
   if (reviewComments.length > 0) {
     try {
