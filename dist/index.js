@@ -56231,7 +56231,6 @@ const reviewCode = async (diff) => {
       For each issue or recommendation, specify the file path and line number(s) in the format:
 
       **File**: <file-path>
-      **Line**: <line-number>
       **Feedback**: <your-feedback>
   
       Here is code to review from git diff:
@@ -56260,20 +56259,15 @@ var exec = __nccwpck_require__(5236);
 const parseFeedback = (feedbackText) => {
   const comments = [];
   const regex =
-    /\*\*File\*\*: (.+)\n\*\*Line\*\*: (\d+-\d+|\d+)\n\*\*Feedback\*\*: (.+?)(?=\n\*\*File\*\*:|$)/gs;
+    /\*\*File\*\*: (.+)\n\*\*Feedback\*\*: (.+?)(?=\n\*\*File\*\*:|$)/gs;
   let match;
 
   while ((match = regex.exec(feedbackText))) {
     const filePath = match[1];
-    const lineRange = match[2];
-    const body = match[3].trim();
-
-    // Convert line range (e.g., "10-12") to a single line number (e.g., 10)
-    const startLine = parseInt(lineRange.split("-")[0]);
+    const body = match[2].trim();
 
     comments.push({
       path: filePath, // File path
-      position: startLine, // Line number (use the start of the range)
       body: `**Feedback**: ${body}`, // Feedback message
     });
   }
@@ -56341,27 +56335,30 @@ const postPullRequestComment = async (feedback) => {
   });
 };
 
-const postLineLevelComments = async (feedback) => {
+async function postFileLevelComments(feedback) {
   console.log("🚀 ~ feedback:", feedback);
   const octokit = new lib_github.getOctokit(process.env.GITHUB_TOKEN);
 
   const { owner, repo } = lib_github.context.repo;
   const pull_number = lib_github.context.payload.pull_request.number;
 
-  // Parse the feedback into line-level comments
+  // Parse the feedback into file-level comments
   const comments = parseFeedback(feedback.text);
 
   // Post the comments on the PR
-  await octokit.rest.pulls.createReview({
-    owner,
-    repo,
-    pull_number,
-    event: "COMMENT", // Add comments without approving or requesting changes
-    comments, // Array of line-level comments
-  });
+  for (const comment of comments) {
+    await octokit.rest.pulls.createReviewComment({
+      owner,
+      repo,
+      pull_number,
+      body: comment.body,
+      path: comment.path, // File path
+      commit_id: lib_github.context.payload.pull_request.head.sha, // Commit SHA of the PR branch
+    });
 
-  console.log("Line-level comments posted to PR.");
-};
+    console.log("Comment posted to PR.", comment);
+  }
+}
 
 ;// CONCATENATED MODULE: ./index.js
 
@@ -56373,7 +56370,7 @@ async function run() {
   try {
     const diff = await getPullRequestDiff();
     const reviewFeedback = await reviewCode(diff);
-    await postLineLevelComments(reviewFeedback);
+    await postFileLevelComments(reviewFeedback);
   } catch (error) {
     core.setFailed(error.message);
   }

@@ -13,7 +13,6 @@ export const reviewCode = async (diff) => {
       For each issue or recommendation, specify the file path and line number(s) in the format:
 
       **File**: <file-path>
-      **Line**: <line-number>
       **Feedback**: <your-feedback>
   
       Here is code to review from git diff:

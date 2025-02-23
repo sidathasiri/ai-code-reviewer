@@ -57,24 +57,27 @@ export const postPullRequestComment = async (feedback) => {
   });
 };
 
-export const postLineLevelComments = async (feedback) => {
+export async function postFileLevelComments(feedback) {
   console.log("🚀 ~ feedback:", feedback);
   const octokit = new github.getOctokit(process.env.GITHUB_TOKEN);
 
   const { owner, repo } = github.context.repo;
   const pull_number = github.context.payload.pull_request.number;
 
-  // Parse the feedback into line-level comments
+  // Parse the feedback into file-level comments
   const comments = parseFeedback(feedback.text);
 
   // Post the comments on the PR
-  await octokit.rest.pulls.createReview({
-    owner,
-    repo,
-    pull_number,
-    event: "COMMENT", // Add comments without approving or requesting changes
-    comments, // Array of line-level comments
-  });
+  for (const comment of comments) {
+    await octokit.rest.pulls.createReviewComment({
+      owner,
+      repo,
+      pull_number,
+      body: comment.body,
+      path: comment.path, // File path
+      commit_id: github.context.payload.pull_request.head.sha, // Commit SHA of the PR branch
+    });
 
-  console.log("Line-level comments posted to PR.");
-};
+    console.log("Comment posted to PR.", comment);
+  }
+}
