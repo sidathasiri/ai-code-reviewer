@@ -7,13 +7,14 @@ import { splitTextIntoChunks } from "./utils.js";
 const client = new BedrockAgentRuntimeClient({ region: "us-east-1" });
 
 export const reviewCode = async (diff) => {
-  // Split the diff into chunks of 20,000 characters (adjust as needed)
-  const chunks = splitTextIntoChunks(diff, 20000);
+  // Split the diff into chunks of 15,000 characters (adjust as needed)
+  const chunks = splitTextIntoChunks(diff, 15000);
 
   let allRecommendations = "";
 
   // Process each chunk separately
   for (const chunk of chunks) {
+    console.log("Processing chunk size:", chunk.length);
     const retrieveAndGen = new RetrieveAndGenerateCommand({
       input: {
         text: `As a GitHub Pull Request code review expert, analyze the following code diff from the pull request and provide the recommendations only for improvements.

@@ -56273,13 +56273,14 @@ const splitTextIntoChunks = (text, chunkSize) => {
 const client = new dist_cjs.BedrockAgentRuntimeClient({ region: "us-east-1" });
 
 const reviewCode = async (diff) => {
-  // Split the diff into chunks of 20,000 characters (adjust as needed)
-  const chunks = splitTextIntoChunks(diff, 20000);
+  // Split the diff into chunks of 15,000 characters (adjust as needed)
+  const chunks = splitTextIntoChunks(diff, 15000);
 
   let allRecommendations = "";
 
   // Process each chunk separately
   for (const chunk of chunks) {
+    console.log("Processing chunk size:", chunk.length);
     const retrieveAndGen = new dist_cjs.RetrieveAndGenerateCommand({
       input: {
         text: `As a GitHub Pull Request code review expert, analyze the following code diff from the pull request and provide the recommendations only for improvements.
