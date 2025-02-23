@@ -56227,24 +56227,20 @@ const reviewCode = async (diff) => {
   console.log("🚀 ~ diff:", diff);
   const retrieveAndGen = await new dist_cjs.RetrieveAndGenerateCommand({
     input: {
-      text: `As a JavaScript/TypeScript GitHub Pull Request code review expert, please analyze this code for:
-  1. Security vulnerabilities (especially around sensitive data handling)
-  2. Best practices violations
-  3. Performance considerations
-  4. Error handling improvements
-  5. Code readability and maintainability
-  6. Code styling and formatting
-  7. Code standards
+      text: `As a GitHub Pull Request code review expert, analyze the following code diff from the pull request.
+      For each issue or recommendation, specify the file path and line number(s) in the format:
+
+      **File**: <file-path>
+      **Line**: <line-number>
+      **Feedback**: <your-feedback>
   
-  Here is code to review from git diff:
-  <>${diff}<>
-  
-  Please structure your recommendations in bullet points without any additional information. If there are no recommendations, just say no issues found.`,
+      Here is code to review from git diff:
+      <>${diff}<>`,
     },
     retrieveAndGenerateConfiguration: {
       type: "KNOWLEDGE_BASE",
       knowledgeBaseConfiguration: {
-        knowledgeBaseId: "YXLPYEUEFA",
+        knowledgeBaseId: "JXHWWF4T9R",
         modelArn:
           "arn:aws:bedrock:us-east-1::foundation-model/amazon.nova-pro-v1:0",
       },
