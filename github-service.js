@@ -147,7 +147,7 @@ export async function postAIFeedbackComments(feedback, diff) {
         owner,
         repo,
         pull_number,
-        commit_id: headSha,
+        commit_id: github.context.payload.pull_request.head.sha,
         event: "COMMENT",
         comments: reviewComments,
       });
